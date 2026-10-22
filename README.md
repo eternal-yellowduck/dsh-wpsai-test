@@ -34,7 +34,8 @@
 │   └── ui.js           # 表现层：Canvas 绘制、事件、状态面板
 ├── tests/
 │   ├── core.test.js    # 规则层单测（设计文档 T-01 ~ T-18）
-│   └── ai.test.js      # AI 行为与性能单测
+│   ├── ai.test.js      # AI 行为与性能单测
+│   └── a11y.test.js    # 颜色对比度单测（设计文档 §2.2）
 ├── docs/
 │   └── gomoku-design.md
 └── README.md
@@ -43,7 +44,7 @@
 ### 测试
 
 ```sh
-node --test tests/core.test.js tests/ai.test.js
+node --test tests/core.test.js tests/ai.test.js tests/a11y.test.js
 ```
 
 需要 Node.js ≥ 18（使用内置 `node:test`），无需 `npm install`。

@@ -7,6 +7,9 @@
   --text: #f3f5f9;
   --text-muted: #b7c0d2;
   --accent: #4f8cff;
+  /* 主按钮配色需满足设计文档 §2.2 的 ≥4.5:1 文字对比度（白字）：#2563eb 为 5.17:1，悬停 #1d4ed8 为 6.70:1。 */
+  --accent-strong: #2563eb;
+  --accent-strong-hover: #1d4ed8;
   --danger: #ff7875;
   --win: #ffd166;
   --board-light: #ecc47e;
@@ -152,13 +155,14 @@ body {
   font-size: 14px;
   font-weight: 600;
   color: #fff;
-  background: var(--accent);
+  background: var(--accent-strong);
   cursor: pointer;
-  transition: filter 0.15s ease, transform 0.05s ease;
+  transition: background-color 0.15s ease, transform 0.05s ease;
 }
 
-.btn:hover:not(:disabled) {
-  filter: brightness(1.1);
+/* 悬停使用更深的背景色而非 brightness 提亮，保证悬停态文字对比度仍 ≥4.5:1；排除 .btn-ghost 以保留其次要按钮外观。 */
+.btn:not(.btn-ghost):hover:not(:disabled) {
+  background: var(--accent-strong-hover);
 }
 
 .btn:active:not(:disabled) {
@@ -179,6 +183,11 @@ body {
   background: transparent;
   border-color: var(--panel-border);
   color: var(--text);
+  transition: border-color 0.15s ease, transform 0.05s ease;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--text-muted);
 }
 
 .tips {
