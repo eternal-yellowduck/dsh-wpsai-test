@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>五子棋</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="app-header">
+      <h1>五子棋</h1>
+      <p class="app-subtitle">15×15 · 黑棋先行 · 横竖斜任意方向连成五子即胜</p>
+    </header>
+
+    <div class="layout">
+      <section class="board-area" aria-label="棋盘区域">
+        <div class="board-wrap">
+          <canvas id="board" class="board" width="600" height="600" tabindex="0" role="application"
+                  aria-label="五子棋棋盘，当前为空盘，黑棋先行；可用方向键移动光标，回车或空格落子"></canvas>
+        </div>
+        <p id="message" class="message" role="status" aria-live="polite">黑棋先行，点击棋盘落子。</p>
+      </section>
+
+      <aside class="info-area" aria-label="对局面板">
+        <dl class="info-list">
+          <div class="info-item">
+            <dt>当前执子</dt>
+            <dd><span id="turn-dot" class="turn-dot is-black" aria-hidden="true"></span><span id="turn-text">黑棋</span></dd>
+          </div>
+          <div class="info-item">
+            <dt>已落子</dt>
+            <dd><span id="move-count">0</span> 手</dd>
+          </div>
+          <div class="info-item">
+            <dt>对局状态</dt>
+            <dd id="status-text">对局中</dd>
+          </div>
+          <div class="info-item">
+            <dt>对局模式</dt>
+            <dd id="mode-text">本地双人</dd>
+          </div>
+        </dl>
+
+        <div class="actions">
+          <button id="undo-btn" type="button" class="btn">悔棋</button>
+          <button id="restart-btn" type="button" class="btn">重新开始</button>
+          <button id="mode-btn" type="button" class="btn btn-ghost">切换人机对战</button>
+        </div>
+
+        <p class="tips">鼠标悬停可预览落子；也可用 Tab 聚焦棋盘后使用方向键移动光标、回车或空格落子。</p>
+      </aside>
+    </div>
+  </main>
+
+  <!-- 经典 <script> 按 core → ai → ui 顺序引入，保证 file:// 双击打开即可运行 -->
+  <script src="js/core.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>
