@@ -6,6 +6,9 @@
 按 [docs/gomoku-design.md](docs/gomoku-design.md) 完成的 15×15 五子棋：原生 HTML + CSS + JavaScript，
 零第三方运行时依赖、零构建，双击 `index.html` 即可游玩。
 
+多场景主题切换的设计方案见 [docs/theme-switching-design.md](docs/theme-switching-design.md)
+（当前仅交付设计文档，主题功能尚未实现）。
+
 ### 快速开始
 
 1. 双击 `index.html`（`file://` 直接打开，无需本地服务器、无需安装依赖）。
@@ -37,7 +40,8 @@
 │   ├── ai.test.js      # AI 行为与性能单测
 │   └── a11y.test.js    # 颜色对比度单测（设计文档 §2.2）
 ├── docs/
-│   └── gomoku-design.md
+│   ├── gomoku-design.md            # 五子棋开发设计文档
+│   └── theme-switching-design.md   # 主题切换设计文档（待实现）
 └── README.md
 ```
 
