@@ -4,13 +4,40 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>五子棋</title>
+  <!-- 首屏防闪烁：在样式表加载前先给 <html> 定好 data-theme，白名单需与 js/theme.js 的 THEMES 保持一致（tests/theme.test.js 校验）。 -->
+  <script>
+    (function () {
+      var valid = { classic: 1, midnight: 1, ink: 1 };
+      var theme = 'classic';
+      try {
+        var saved = localStorage.getItem('gomoku.theme.v1');
+        if (saved && valid[saved]) theme = saved;
+      } catch (error) {
+        /* 存储被禁用时使用默认主题 */
+      }
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main class="app">
     <header class="app-header">
-      <h1>五子棋</h1>
-      <p class="app-subtitle">15×15 · 黑棋先行 · 横竖斜任意方向连成五子即胜</p>
+      <div class="app-title">
+        <h1>五子棋</h1>
+        <p class="app-subtitle">15×15 · 黑棋先行 · 横竖斜任意方向连成五子即胜</p>
+      </div>
+      <div class="theme-switcher" role="group" aria-label="场景主题">
+        <button type="button" class="theme-option" data-theme-id="classic" aria-pressed="true">
+          <span class="theme-swatch" data-theme-id="classic" aria-hidden="true"></span>经典木纹
+        </button>
+        <button type="button" class="theme-option" data-theme-id="midnight" aria-pressed="false">
+          <span class="theme-swatch" data-theme-id="midnight" aria-hidden="true"></span>暗夜星空
+        </button>
+        <button type="button" class="theme-option" data-theme-id="ink" aria-pressed="false">
+          <span class="theme-swatch" data-theme-id="ink" aria-hidden="true"></span>水墨宣纸
+        </button>
+      </div>
     </header>
 
     <div class="layout">
@@ -53,9 +80,11 @@
     </div>
   </main>
 
-  <!-- 经典 <script> 按 core → ai → ui 顺序引入，保证 file:// 双击打开即可运行 -->
+  <!-- 经典 <script> 按 core → ai → theme → ui 顺序引入，保证 file:// 双击打开即可运行；
+       theme.js 需在 ui.js 之前加载，ui.js 依赖 GomokuTheme.palette() 绘制 Canvas。 -->
   <script src="js/core.js"></script>
   <script src="js/ai.js"></script>
+  <script src="js/theme.js"></script>
   <script src="js/ui.js"></script>
 </body>
 </html>

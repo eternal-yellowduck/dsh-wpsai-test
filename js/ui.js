@@ -1,12 +1,14 @@
 /**
  * 五子棋界面层：Canvas 渲染、DOM 事件、状态面板。
- * 只负责展示与交互：规则判定委托 GomokuCore（js/core.js），人机落子委托 GomokuAI（js/ai.js）。
- * 对应 docs/gomoku-design.md 第 8 节：双列/单列布局、高分屏缩放、最后落子、悬停预落子、胜利高亮、键盘与读屏。
+ * 只负责展示与交互：规则判定委托 GomokuCore（js/core.js），人机落子委托 GomokuAI（js/ai.js），
+ * 主题令牌与 Canvas 调色板委托 GomokuTheme（js/theme.js）。
+ * 对应 docs/gomoku-design.md 第 8 节与 docs/theme-switching-design.md 第 7 节。
  */
 (function (global) {
   'use strict';
   var Core = global.GomokuCore;
   var AI = global.GomokuAI;
+  var Theme = global.GomokuTheme;
   var BOARD_SIZE = 15;
   var MODE_PVP = 'pvp';
   var MODE_PVE = 'pve';
@@ -18,9 +20,16 @@
     GAME_OVER: '对局已结束，请悔棋或重新开始。'
   };
   var app = {
-    game: null, mode: MODE_PVP, aiPending: false, hover: null, cursor: null,
+    game: null, mode: MODE_PVP, aiPending: false, hover: null, cursor: null, palette: null,
     dpr: 1, cssSize: 0, cell: 0, origin: 0, raf: 0, timer: 0, els: {}
   };
+
+  /** 主题切换后重新读取 Canvas 令牌并重绘；不触碰对局状态（history/turn/status/mode/AI 计时器）。 */
+  function refreshPalette() {
+    if (!Theme) return;
+    app.palette = Theme.palette();
+    scheduleDraw();
+  }
 
   /** 尺寸与坐标：按 devicePixelRatio 放大画布，cell = floor(宽 / (size + 1))，四周留一格。 */
   function resizeCanvas() {
@@ -56,8 +65,9 @@
     var size = app.game.size;
     var start = app.origin;
     var end = app.origin + app.cell * (size - 1);
+    var palette = app.palette || {};
     ctx.save();
-    ctx.strokeStyle = '#6b4f27';
+    ctx.strokeStyle = palette.boardGrid;
     ctx.lineWidth = 1;
     for (var i = 0; i < size; i += 1) {
       var pos = app.origin + i * app.cell;
@@ -71,7 +81,7 @@
       ctx.stroke();
     }
     // 星位：15 路画四角星 + 天元，小棋盘只画天元
-    ctx.fillStyle = '#4a3517';
+    ctx.fillStyle = palette.boardStar;
     var stars = size >= 15 ? STAR_POINTS : [[Math.floor(size / 2), Math.floor(size / 2)]];
     for (var j = 0; j < stars.length; j += 1) {
       if (stars[j][0] >= size || stars[j][1] >= size) continue;
@@ -84,6 +94,9 @@
   }
 
   function drawStone(ctx, x, y, color, alpha) {
+    var palette = app.palette || {};
+    var stops = color === Core.BLACK ? palette.stoneBlack : palette.stoneWhite;
+    if (!stops || !stops[0]) return; // 主题令牌缺失时不绘制，避免 createRadialGradient 报错
     var pos = boardPixel(x, y);
     var radius = app.cell * 0.42;
     ctx.save();
@@ -92,19 +105,18 @@
     ctx.arc(pos.px, pos.py, radius, 0, Math.PI * 2);
     var gradient = ctx.createRadialGradient(
       pos.px - radius * 0.35, pos.py - radius * 0.35, radius * 0.15, pos.px, pos.py, radius);
+    gradient.addColorStop(0, stops[0]);
     if (color === Core.BLACK) {
-      gradient.addColorStop(0, '#7c7c7c');
-      gradient.addColorStop(0.5, '#2b2b2b');
-      gradient.addColorStop(1, '#000000');
+      gradient.addColorStop(0.5, stops[1]);
+      gradient.addColorStop(1, stops[2]);
     } else {
-      gradient.addColorStop(0, '#ffffff');
-      gradient.addColorStop(0.7, '#efefef');
-      gradient.addColorStop(1, '#c5c5c5');
+      gradient.addColorStop(0.7, stops[1]);
+      gradient.addColorStop(1, stops[2]);
     }
     ctx.fillStyle = gradient;
     ctx.fill();
     ctx.lineWidth = Math.max(1, app.cell * 0.03);
-    ctx.strokeStyle = color === Core.BLACK ? 'rgba(0, 0, 0, 0.85)' : 'rgba(130, 130, 130, 0.75)';
+    ctx.strokeStyle = color === Core.BLACK ? palette.stoneBlackEdge : palette.stoneWhiteEdge;
     ctx.stroke();
     ctx.restore();
   }
@@ -112,10 +124,11 @@
   function drawWinBand(ctx) {
     var line = app.game.winLine;
     if (!line || line.length < 2) return;
+    var palette = app.palette || {};
     var first = boardPixel(line[0][0], line[0][1]);
     var last = boardPixel(line[line.length - 1][0], line[line.length - 1][1]);
     ctx.save();
-    ctx.strokeStyle = 'rgba(255, 209, 102, 0.45)';
+    ctx.strokeStyle = palette.winBand;
     ctx.lineWidth = app.cell * 0.72;
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -128,9 +141,15 @@
   function drawLastMarker(ctx) {
     var move = app.game.lastMove;
     if (!move) return;
+    var palette = app.palette || {};
     var pos = boardPixel(move.x, move.y);
     ctx.save();
-    ctx.fillStyle = '#ff4d4f';
+    // 双层标记：浅色光环保证在黑棋上可见，内圈主题色圆点保证在白棋上可见
+    ctx.fillStyle = palette.markerHalo;
+    ctx.beginPath();
+    ctx.arc(pos.px, pos.py, Math.max(3, app.cell * 0.14), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = palette.lastMarker;
     ctx.beginPath();
     ctx.arc(pos.px, pos.py, Math.max(2, app.cell * 0.09), 0, Math.PI * 2);
     ctx.fill();
@@ -148,10 +167,15 @@
 
   function drawCursor(ctx) {
     if (!app.cursor || global.document.activeElement !== app.els.canvas) return;
+    var palette = app.palette || {};
     var pos = boardPixel(app.cursor.x, app.cursor.y);
     var half = app.cell * 0.46;
     ctx.save();
-    ctx.strokeStyle = 'rgba(79, 140, 255, 0.95)';
+    // 双层描边：浅色外圈 + 主题色内框，保证在浅木色与深色棋盘上都清晰可见
+    ctx.strokeStyle = palette.cursorHalo;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(pos.px - half, pos.py - half, half * 2, half * 2);
+    ctx.strokeStyle = palette.cursor;
     ctx.lineWidth = 2;
     ctx.strokeRect(pos.px - half, pos.py - half, half * 2, half * 2);
     ctx.restore();
@@ -345,13 +369,13 @@
     global.addEventListener('resize', onResize);
   }
 
-  /** 初始化：元素引用、对局创建、首次绘制。 */
+  /** 初始化：元素引用、对局创建、主题调色板、首次绘制。 */
   function init() {
     var canvas = document.getElementById('board');
     var messageEl = document.getElementById('message');
     if (!canvas) return;
-    if (!Core || !AI) {
-      if (messageEl) messageEl.textContent = '脚本加载失败，请检查 js/core.js、js/ai.js、js/ui.js 是否完整。';
+    if (!Core || !AI || !Theme) {
+      if (messageEl) messageEl.textContent = '脚本加载失败，请检查 js/core.js、js/ai.js、js/theme.js、js/ui.js 是否完整。';
       return;
     }
     var ctx = canvas.getContext && canvas.getContext('2d');
@@ -369,6 +393,10 @@
     app.game = Core.createGame({ size: BOARD_SIZE });
     resizeCanvas();
     bindEvents();
+    // 主题需在首次绘制前就绪：init() 幂等（head 内联脚本已预置 data-theme 时不会重复派发事件）
+    Theme.init();
+    app.palette = Theme.palette();
+    Theme.onChange(refreshPalette);
     render();
     setMessage('黑棋先行，点击棋盘落子。');
   }

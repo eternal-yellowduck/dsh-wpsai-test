@@ -1,7 +1,17 @@
-/* 五子棋界面样式：桌面双列 / 窄屏单列，棋盘自适应且不变形。 */
+/* 五子棋界面样式：桌面双列 / 窄屏单列，棋盘自适应且不变形。
+ *
+ * 颜色只剩一个来源：主题令牌（CSS 自定义属性）。
+ *   :root                       → 经典木纹（默认 / 回退 / 无 JS 时可用）
+ *   [data-theme="midnight"]     → 暗夜星空
+ *   [data-theme="ink"]          → 水墨宣纸
+ * 主题块只覆盖同一组令牌；组件样式只消费 var(--…)。Canvas 用色由 js/theme.js
+ * 经 getComputedStyle 读取同一批令牌后交给 js/ui.js 绘制。
+ * 设计见 docs/theme-switching-design.md。 */
 
 :root {
+  /* 页面与语义色 */
   --page-bg: #202634;
+  --page-glow: #2c3549;
   --panel-bg: #2a3142;
   --panel-border: #3b4458;
   --text: #f3f5f9;
@@ -10,12 +20,109 @@
   /* 主按钮配色需满足设计文档 §2.2 的 ≥4.5:1 文字对比度（白字）：#2563eb 为 5.17:1，悬停 #1d4ed8 为 6.70:1。 */
   --accent-strong: #2563eb;
   --accent-strong-hover: #1d4ed8;
+  --text-on-accent: #ffffff;
   --danger: #ff7875;
   --win: #ffd166;
+  /* 主按钮内圈焦点环（落在面板底色上，需对面板 ≥3:1） */
+  --focus-ring-inner: #ffffff;
+  /* 棋盘与棋子（Canvas 经 getComputedStyle 读取，见 js/theme.js CANVAS_TOKENS） */
   --board-light: #ecc47e;
   --board-dark: #d9a95e;
-  --line: #6b4f27;
+  --board-shadow: rgba(0, 0, 0, 0.38);
+  --board-edge: rgba(255, 255, 255, 0.18);
+  --board-grid: #6b4f27;
+  --board-star: #4a3517;
+  --stone-black-0: #7c7c7c;
+  --stone-black-1: #2b2b2b;
+  --stone-black-2: #000000;
+  --stone-white-0: #ffffff;
+  --stone-white-1: #efefef;
+  --stone-white-2: #c5c5c5;
+  --stone-black-edge: #000000;
+  --stone-white-edge: #6b4f27;
+  --win-band: rgba(255, 209, 102, 0.45);
+  --last-marker: #d9363e;
+  --marker-halo: #ffffff;
+  --cursor: #143f7a;
+  --cursor-halo: rgba(255, 255, 255, 0.85);
+  /* 非主题令牌（三套主题共用） */
   --radius: 12px;
+  --theme-transition: 180ms;
+  color-scheme: dark;
+}
+
+/* 暗夜星空：近黑蓝底 + 冷色棋盘；黑棋带冷蓝高光描边。 */
+[data-theme="midnight"] {
+  --page-bg: #0b1020;
+  --page-glow: #16203a;
+  --panel-bg: #141b2d;
+  --panel-border: #26314a;
+  --text: #eaf0ff;
+  --text-muted: #a8b6d1;
+  --accent: #8cc8ff;
+  --accent-strong: #2563eb;
+  --accent-strong-hover: #1d4ed8;
+  --text-on-accent: #ffffff;
+  --danger: #ff9b9b;
+  --win: #ffd166;
+  --focus-ring-inner: #ffffff;
+  --board-light: #2e405f;
+  --board-dark: #1c2942;
+  --board-shadow: rgba(0, 0, 0, 0.55);
+  --board-edge: rgba(140, 200, 255, 0.22);
+  --board-grid: #8fa9cc;
+  --board-star: #b9cdea;
+  --stone-black-0: #8a93a8;
+  --stone-black-1: #232a38;
+  --stone-black-2: #05070c;
+  --stone-white-0: #ffffff;
+  --stone-white-1: #e6ecf7;
+  --stone-white-2: #b9c6dd;
+  --stone-black-edge: #aac8ff;
+  --stone-white-edge: #e8eefb;
+  --win-band: rgba(255, 209, 102, 0.42);
+  --last-marker: #d9363e;
+  --marker-halo: #ffffff;
+  --cursor: #8cc8ff;
+  --cursor-halo: rgba(11, 16, 32, 0.85);
+  color-scheme: dark;
+}
+
+/* 水墨宣纸：宣纸米白底 + 墨色棋盘；浅底主题的内圈焦点环改用墨色以保证可见性。 */
+[data-theme="ink"] {
+  --page-bg: #f4efe4;
+  --page-glow: #ece5d6;
+  --panel-bg: #fffdf7;
+  --panel-border: #d5cbb8;
+  --text: #2a2620;
+  --text-muted: #6c6457;
+  --accent: #8c2f1e;
+  --accent-strong: #8c2f1e;
+  --accent-strong-hover: #6f2415;
+  --text-on-accent: #ffffff;
+  --danger: #a3231b;
+  --win: #7d4e00;
+  --focus-ring-inner: #2a2620;
+  --board-light: #e3d5b3;
+  --board-dark: #d3c19a;
+  --board-shadow: rgba(60, 50, 30, 0.28);
+  --board-edge: rgba(255, 255, 255, 0.55);
+  --board-grid: #3f382c;
+  --board-star: #2a241c;
+  --stone-black-0: #6b6b6b;
+  --stone-black-1: #2b2b2b;
+  --stone-black-2: #000000;
+  --stone-white-0: #ffffff;
+  --stone-white-1: #f4f1e8;
+  --stone-white-2: #ddd5c3;
+  --stone-black-edge: #000000;
+  --stone-white-edge: #4a4438;
+  --win-band: rgba(184, 134, 43, 0.35);
+  --last-marker: #c0392b;
+  --marker-halo: #fffdf7;
+  --cursor: #7a2e1e;
+  --cursor-halo: rgba(255, 253, 247, 0.9);
+  color-scheme: light;
 }
 
 * {
@@ -30,16 +137,26 @@ body {
 
 body {
   min-height: 100vh;
-  background: radial-gradient(circle at 50% 0, #2c3549 0%, var(--page-bg) 65%);
+  background: radial-gradient(circle at 50% 0, var(--page-glow) 0%, var(--page-bg) 65%);
   color: var(--text);
   font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   line-height: 1.5;
+  transition: color var(--theme-transition) ease;
 }
 
 .app {
   width: min(1100px, 100%);
   margin: 0 auto;
   padding: 22px 16px 36px;
+}
+
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin-bottom: 18px;
 }
 
 .app-header h1 {
@@ -49,9 +166,71 @@ body {
 }
 
 .app-subtitle {
-  margin: 4px 0 18px;
+  margin: 4px 0 0;
   color: var(--text-muted);
   font-size: 13px;
+}
+
+/* 主题切换控件：分段按钮组，固定高度避免切换时布局抖动。 */
+.theme-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.theme-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--theme-transition) ease,
+    background-color var(--theme-transition) ease, color var(--theme-transition) ease;
+}
+
+.theme-option:hover {
+  border-color: var(--text-muted);
+}
+
+.theme-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.theme-option[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--panel-bg);
+  font-weight: 700;
+}
+
+.theme-swatch {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--panel-border);
+}
+
+/* 色块是控件自身的主题预览，无法用当前主题的令牌表达其他主题，故按主题 id 写值；
+ * 这是 styles.css 中除令牌块外唯一按主题区分的颜色。 */
+.theme-swatch[data-theme-id="classic"] {
+  background: linear-gradient(135deg, #2c3549 0%, #2c3549 50%, #ecc47e 50%, #ecc47e 100%);
+}
+
+.theme-swatch[data-theme-id="midnight"] {
+  background: linear-gradient(135deg, #0b1020 0%, #0b1020 50%, #8cc8ff 50%, #8cc8ff 100%);
+}
+
+.theme-swatch[data-theme-id="ink"] {
+  background: linear-gradient(135deg, #f4efe4 0%, #f4efe4 50%, #3f382c 50%, #3f382c 100%);
 }
 
 .layout {
@@ -68,7 +247,7 @@ body {
 .board-wrap {
   background: linear-gradient(155deg, var(--board-light), var(--board-dark));
   border-radius: var(--radius);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38), inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  box-shadow: 0 14px 34px var(--board-shadow), inset 0 0 0 1px var(--board-edge);
   overflow: hidden;
 }
 
@@ -91,6 +270,8 @@ body {
   border: 1px solid var(--panel-border);
   border-radius: var(--radius);
   padding: 16px;
+  transition: background-color var(--theme-transition) ease,
+    border-color var(--theme-transition) ease;
 }
 
 .info-list {
@@ -133,13 +314,13 @@ body {
 }
 
 .turn-dot.is-black {
-  background: radial-gradient(circle at 35% 30%, #737373, #0a0a0a 72%);
-  border: 1px solid #000;
+  background: radial-gradient(circle at 35% 30%, var(--stone-black-0), var(--stone-black-2) 72%);
+  border: 1px solid var(--stone-black-edge);
 }
 
 .turn-dot.is-white {
-  background: radial-gradient(circle at 35% 30%, #ffffff, #c8c8c8 72%);
-  border: 1px solid #8d8d8d;
+  background: radial-gradient(circle at 35% 30%, var(--stone-white-0), var(--stone-white-2) 72%);
+  border: 1px solid var(--stone-white-edge);
 }
 
 .actions {
@@ -154,10 +335,10 @@ body {
   padding: 10px 14px;
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-on-accent);
   background: var(--accent-strong);
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.05s ease;
+  transition: background-color var(--theme-transition) ease, transform 0.05s ease;
 }
 
 /* 悬停使用更深的背景色而非 brightness 提亮，保证悬停态文字对比度仍 ≥4.5:1；排除 .btn-ghost 以保留其次要按钮外观。 */
@@ -170,7 +351,7 @@ body {
 }
 
 .btn:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--focus-ring-inner);
   outline-offset: 2px;
 }
 
@@ -183,7 +364,8 @@ body {
   background: transparent;
   border-color: var(--panel-border);
   color: var(--text);
-  transition: border-color 0.15s ease, transform 0.05s ease;
+  transition: border-color var(--theme-transition) ease, color var(--theme-transition) ease,
+    transform 0.05s ease;
 }
 
 .btn-ghost:hover:not(:disabled) {
@@ -201,6 +383,7 @@ body {
   margin: 12px 2px 0;
   font-size: 14px;
   color: var(--text-muted);
+  transition: color var(--theme-transition) ease;
 }
 
 .message.is-error {
@@ -212,10 +395,31 @@ body {
   font-weight: 700;
 }
 
+/* 减少动态效果：关闭主题颜色过渡（Canvas 本身不做插值，一次重绘完成）。 */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --theme-transition: 0ms;
+  }
+}
+
 /* 窄屏（< 720px）改为上下单列，棋盘仍保持正方形并自适应宽度 */
 @media (max-width: 720px) {
   .app {
     padding: 14px 10px 26px;
+  }
+
+  .app-header {
+    align-items: stretch;
+  }
+
+  .theme-switcher {
+    width: 100%;
+  }
+
+  .theme-option {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-height: 44px;
   }
 
   .layout {
