@@ -2,10 +2,10 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 文档版本 | v1.0（设计基线） |
-| 文档状态 | 待评审（本阶段仅交付设计，不包含功能实现） |
+| 文档版本 | v1.1（实现基线） |
+| 文档状态 | 已评审并实现（用户已确认 Q1–Q3，结论见 §12；实现与验证记录见 §14） |
 | 关联任务 | Task #33：做一个主题切换，可以切换不同风格的场景 |
-| 适用阶段 | P0（主题令牌化 + 三套场景主题 + 切换与持久化）→ P1（跟随系统、过渡动画） |
+| 适用阶段 | P0（主题令牌化 + 三套场景主题 + 切换与持久化）已实现；P1（跟随系统、过渡动画）未做 |
 | 编写日期 | 2026-10-22 |
 | 现状基线 | 仓库 `main` 分支既有五子棋实现：`index.html`、`styles.css`、`js/core.js`、`js/ai.js`、`js/ui.js`、`tests/*.test.js` |
 
@@ -16,6 +16,8 @@
 **一句话结论**：在既有零构建、零依赖、Canvas 2D 的五子棋实现上，用「CSS 自定义属性 + `<html data-theme>`」作为唯一的主题数据源，新增一个轻量 `js/theme.js` 主题控制器与一个可访问的场景切换控件；首批提供 **经典木纹 / 暗夜星空 / 水墨宣纸** 三套"场景"主题，主题切换即时生效、写入 `localStorage` 持久化、首屏无闪烁，并把目前散落在 `styles.css` 与 `js/ui.js` 中的硬编码颜色全部收敛为主题令牌（含 Canvas 绘制所需的棋子/棋盘/标记色）。
 
 **推荐方案**：方案 A（CSS 令牌 + `data-theme` + JS 调色板桥接）。
+
+**用户确认结论（2026-10-22）**：Q1 确认为配色/材质型主题、不引入图片资源；Q2 首次访问始终默认经典木纹；Q3 主题需要影响棋子材质（完整场景主题）。实现按此结论落地，与本文推荐方案一致。
 
 **为什么这样选**：
 1. 项目已确定"零构建、零第三方依赖、双击 `index.html` 即玩"，多套样式表或运行时 CSS-in-JS 都会引入额外加载/维护成本，CSS 变量是唯一不需要新增构建步骤的方案。
@@ -71,7 +73,7 @@
 
 ### 3.2 非目标（本设计不覆盖 / 本期不做）
 
-- **不实现代码**：本次任务交付设计文档；实现由后续开发任务按本文档执行。
+- ~~**不实现代码**：本次任务交付设计文档；实现由后续开发任务按本文档执行。~~ **v1.1 已实现**：实现与验证记录见 §14。
 - 不做自定义主题（用户自选颜色）、主题市场、导入导出主题包。
 - 不做位图背景/插画/音效等资源型场景（会破坏零资源、`file://` 离线约束）。
 - 不改变对局规则、AI 行为、棋盘尺寸、脚本加载顺序中的业务依赖（`core.js → ai.js → ui.js` 保持不变，仅插入 `theme.js`）。
@@ -97,7 +99,7 @@
 
 | 编号 | 假设 | 处理方式 |
 | --- | --- | --- |
-| A-01 | "不同风格的场景"指视觉风格/氛围主题（木纹、暗夜、水墨），而非具象背景插画 | 若实际期望为插画场景，需回到第 12 节待确认 Q1，并评估引入本地图片资源 |
+| A-01 | "不同风格的场景"指视觉风格/氛围主题（木纹、暗夜、水墨），而非具象背景插画 | **已确认（Q1）**：用户确认是配色主题、不引入图片资源，按本假设执行 |
 | A-02 | 浏览器均支持 CSS 自定义属性与 `localStorage`（近两个大版本桌面/移动主流浏览器） | 不支持 CSS 变量时页面回退为 `:root` 经典主题；`localStorage` 异常时静默降级为不记忆 |
 | A-03 | 主题切换不影响对局数据（`history`/`turn`/`status`/`mode`/AI 计时器） | 验收项 TH-09 强制检查：切换前后对局状态快照一致 |
 | A-04 | Canvas 颜色在主题切换时一次性重绘即可，不需要渐变过渡 | 棋盘色以单帧跳变换新；页面 UI 用 CSS `transition` 仅过渡颜色属性（低成本），并遵循 `prefers-reduced-motion` |
@@ -115,7 +117,7 @@
 | FR-T02 | 主题切换控件常驻页面，可随时切换 | P0 | 页面头部可见切换控件，点击后 1 帧内完成切换 |
 | FR-T03 | 主题切换同时作用于 DOM UI 与 Canvas 棋盘 | P0 | 面板、按钮、棋盘、棋子、标记、光标全部成套变化，无旧主题残留色 |
 | FR-T04 | 记忆主题选择 | P0 | 刷新后自动恢复；清除站点数据后回到默认 |
-| FR-T05 | 首次访问的默认主题策略 | P0 | 无保存值时按 `prefers-color-scheme`：暗色 → 暗夜星空，亮色 → 经典木纹；不支持时经典木纹 |
+| FR-T05 | 首次访问的默认主题策略 | P0 | 无保存值时**始终默认经典木纹**（Q2 已确认，不跟随系统深浅色偏好）；用户显式选择后以其保存值为准 |
 | FR-T06 | 首屏无主题闪烁 | P1 | 有保存值刷新时首帧即为目标主题 |
 | FR-T07 | 切换控件键盘可用 | P0 | Tab 可达、Enter/Space 触发、焦点可见、`aria-pressed` 正确 |
 | FR-T08 | 主题持久化失败可降级 | P0 | 隐私模式/`file://` 限制下页面正常、无报错、可正常切换（仅不记忆） |
@@ -208,7 +210,8 @@
 | `--accent-strong-hover` | 主按钮悬停底 | `#1d4ed8` | `#1d4ed8` | `#6f2415` |
 | `--danger` | 错误提示文字 | `#ff7875` | `#ff9b9b` | `#a3231b` |
 | `--win` | 胜利结果文字 | `#ffd166` | `#ffd166` | `#7d4e00` |
-| `--focus-ring-inner` | 按钮内圈焦点环 | `#ffffff` | `#ffffff` | `#ffffff` |
+| `--focus-ring-inner` | 按钮内圈焦点环（落在面板底色上） | `#ffffff` | `#ffffff` | `#2a2620`（浅底主题用墨色，白环在宣纸底上不可见，见 §7.7） |
+| `--text-on-accent` | 主按钮文字色 | `#ffffff` | `#ffffff` | `#ffffff` |
 
 #### 7.2.2 棋盘与棋子令牌（Canvas 读取）
 
@@ -226,12 +229,13 @@
 | `--stone-white-edge` | 白棋描边 | `#6b4f27`（原 `rgba(130,130,130,.75)`，见 §7.7） | `#e8eefb` | `#4a4438` |
 | `--win-band` | 胜利五连高亮条 | `rgba(255,209,102,0.45)` | `rgba(255,209,102,0.42)` | `rgba(184,134,43,0.35)` |
 | `--last-marker` | 最后落子标记点 | `#d9363e`（原 `#ff4d4f`，见 §7.7） | `#d9363e` | `#c0392b` |
+| `--marker-halo` | 最后落子标记外圈光环（黑棋上的可见性） | `#ffffff` | `#ffffff` | `#fffdf7` |
 | `--cursor` | 键盘光标框 | `#143f7a`（原 `rgba(79,140,255,.95)`，见 §7.7） | `#8cc8ff` | `#7a2e1e` |
 | `--cursor-halo` | 键盘光标外圈描边 | `rgba(255,255,255,0.85)` | `rgba(11,16,32,0.85)` | `rgba(255,253,247,0.9)` |
 
 非主题令牌（三套共用，不进主题块）：`--radius: 12px`、`--theme-transition: 180ms`。
 
-**设计期对比度核算**：上述基线值已按 WCAG 2.1 相对亮度公式逐项核算（文字/按钮 ≥4.5:1，焦点/棋盘元素/棋子轮廓 ≥3:1），结果见附录 A。三套主题全部通过；实现完成后由 `tests/theme.test.js` 对实际 CSS 值重新计算，防止后续调整色值时回归。
+**对比度核算**：上述基线值按 WCAG 2.1 相对亮度公式逐项核算（文字/按钮 ≥4.5:1，焦点/棋盘元素/棋子轮廓 ≥3:1）。实现完成后由 `tests/theme.test.js` 对 `styles.css` 实际值重新计算（结果见附录 A），防止后续调整色值时回归；实现期复核发现「最后落子标记」与「水墨宣纸白色焦点内环」两处基线不达标，已按 §7.7 修正。
 
 #### 7.2.3 主题注册表
 
@@ -252,9 +256,12 @@ const THEMES = [
 
 ```js
 global.GomokuTheme = {
+  STORAGE_KEY, DEFAULT_THEME, EVENT_NAME, // 常量：存储键 / 默认主题 / 事件名
   THEMES,                            // 只读注册表
-  resolveInitialTheme(stored, prefersDark), // 纯函数，可单测：返回合法 id
-  init(),                            // 启动：确定初始主题、应用、绑定切换控件
+  CANVAS_TOKENS,                     // Canvas 读取的令牌清单
+  resolveInitialTheme(stored),       // 纯函数，可单测：返回合法 id（无保存值 → classic）
+  isValidTheme(id),                  // 白名单判断
+  init(),                            // 启动：确定初始主题、应用、绑定切换控件（幂等）
   apply(id, options),                // 切换主题：options.persist 默认 true
   current(),                         // 当前主题 id
   palette(),                         // 当前主题的 Canvas 调色板（缓存）
@@ -267,16 +274,16 @@ global.GomokuTheme = {
 ```
 init():
   1. stored = 读 localStorage['gomoku.theme.v1']（try/catch，异常返回 null）
-  2. prefersDark = matchMedia('(prefers-color-scheme: dark)').matches（不存在则 false）
-  3. id = resolveInitialTheme(stored, prefersDark)
-  4. apply(id, { persist: false })   // 内联脚本可能已预置 data-theme，这里幂等对齐
-  5. 绑定切换控件按钮事件，按当前 id 初始化 aria-pressed
+  2. id = resolveInitialTheme(stored)     // Q2：无保存值 → 'classic'
+  3. apply(id, { persist: false })        // 内联脚本可能已预置 data-theme，这里幂等对齐
+  4. 绑定切换控件按钮事件，按当前 id 初始化 aria-pressed
 
-resolveInitialTheme(stored, prefersDark):
+resolveInitialTheme(stored):
   stored ∈ THEMES.id  → 返回 stored
-  prefersDark         → 'midnight'
-  否则                → 'classic'
+  否则                → 'classic'        // 首次访问 / 非法值 / 存储不可用
 ```
+
+> v1.1 变更：按用户对 Q2 的答复，去掉 `prefers-color-scheme` 分支，首次访问固定经典木纹；跟随系统作为 P1 扩展保留在 §13。
 
 #### 7.3.3 切换流程
 
@@ -337,8 +344,8 @@ apply(id, { persist = true }):
 ```
 
 - 采用**分段按钮组**而非下拉框：主题数量固定为 3、全部选项可同时看到，切换成本最低；读屏可读、键盘 Tab 可达。
-- `.theme-swatch` 为 12×12 圆形色块，用 `background: linear-gradient(135deg, var(--page-bg), var(--board-light))` 一类组合表达主题基调，颜色同样来自令牌，避免控件自身硬编码。
-- `aria-pressed="true"` 表示当前主题；切换后由 JS 同步更新（不要只依赖 `:focus`）。上面标记为"经典木纹选中"只是**无 JS 时的兜底初值**，实际初始选中项由 `theme.js init()` 按"保存值 → 系统偏好 → 默认"的顺序修正。
+- `.theme-swatch` 为 12×12 圆形色块，用两段 `linear-gradient(135deg, …)` 表达主题基调。**实现取舍**：色块预览的是"其他主题"的颜色，无法用当前主题的令牌表达，因此在 `styles.css` 中按 `data-theme-id` 写死三组预览色（该文件内除令牌块外唯一按主题区分的颜色，设计上仍符合"主题数据只存在于 styles.css"）。
+- `aria-pressed="true"` 表示当前主题；切换后由 JS 同步更新（不要只依赖 `:focus`）。上面标记为"经典木纹选中"只是**无 JS 时的兜底初值**，实际初始选中项由 `theme.js init()` 按"保存值 → 默认经典木纹"的顺序修正。
 - 控件不进入 `aria-live`，避免每次切换都打断读屏；主题变化本身不是对局信息，不需要播报（若需要可 P1 增加 `sr-only` 状态文本，由用户按需开启）。
 
 #### 7.4.2 样式要点
@@ -358,21 +365,18 @@ apply(id, { persist = true }):
 <script>
   (function () {
     var valid = { classic: 1, midnight: 1, ink: 1 };
-    var saved = null;
-    try { saved = localStorage.getItem('gomoku.theme.v1'); } catch (e) {}
-    var theme = saved && valid[saved] ? saved : null;
-    if (!theme) {
-      try {
-        theme = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'midnight' : 'classic';
-      } catch (e) { theme = 'classic'; }
-    }
+    var theme = 'classic';
+    try {
+      var saved = localStorage.getItem('gomoku.theme.v1');
+      if (saved && valid[saved]) theme = saved;
+    } catch (error) { /* 存储被禁用时使用默认主题 */ }
     document.documentElement.setAttribute('data-theme', theme);
   })();
 </script>
 ```
 
 - 主题 id 白名单在 `theme.js` 与内联脚本各出现一次（不同执行时机，无法共享），这是**唯一允许的重复**，由 `tests/theme.test.js` 校验两处白名单一致，防止漂移。
-- 无保存值且系统偏好为亮色时，内联脚本会写 `data-theme="classic"`；`styles.css` 中 `:root` 即为该主题，因此该写入不影响样式且与 `theme.js` 初始化幂等。
+- 无保存值时内联脚本直接写 `data-theme="classic"`，与 `styles.css` 的 `:root` 一致，并与 `theme.js` 初始化幂等；也符合 Q2"首次访问始终经典木纹"的确认结论。
 - 若内联脚本被执行策略拦截（本仓库无 CSP，但保持健壮），`theme.js init()` 仍会在脚本加载后应用主题，只是可能出现一次首屏闪烁，不影响功能。
 
 ### 7.6 Canvas 渲染层改造（`js/ui.js`）
@@ -384,7 +388,7 @@ apply(id, { persist = true }):
 | `drawStone` 黑/白渐变 | 硬编码三档颜色 | 循环使用 `app.palette.stoneBlack` / `stoneWhite` 数组 |
 | `drawStone` 描边 | 黑白各一硬编码 rgba | `app.palette.stoneBlackEdge` / `stoneWhiteEdge` |
 | `drawWinBand` | `rgba(255,209,102,0.45)` | `app.palette.winBand` |
-| `drawLastMarker` | `'#ff4d4f'` | `app.palette.lastMarker` |
+| `drawLastMarker` | `'#ff4d4f'` 单色圆点 | 双层：`app.palette.markerHalo` 大圆点打底 + `app.palette.lastMarker` 小圆点，保证黑棋上的标记可见 |
 | `drawCursor` | `rgba(79,140,255,0.95)` 单层框 | 双层框：先用 `app.palette.cursorHalo` 画 4px 外框，再用 `app.palette.cursor` 画 2px 内框（提升木色/深色棋盘上的可见性） |
 | `draw` 触发 | 仅 `requestAnimationFrame` 合并 | 新增强制重绘入口 `refreshPalette()`：`app.palette = GomokuTheme.palette(); scheduleDraw();`，由 `gomoku:themechange` 事件调用 |
 
@@ -394,13 +398,14 @@ apply(id, { persist = true }):
 
 设计期用 WCAG 2.1 公式核算现值时发现三处现有实现的对比度低于本设计对各主题的要求（属于"主题令牌化时一并修正"，不扩大功能范围）：
 
-| 元素 | 现状值 | 现值对比度 | 修正后（经典木纹） | 修正后对比度 |
+| 元素 | 现状值 | 现值对比度 | 修正后（经典木纹） | 修正后对比度（实现后实测） |
 | --- | --- | --- | --- | --- |
-| 键盘光标框 | `rgba(79,140,255,.95)` | 对棋盘亮/暗端仅 **1.96:1 / 1.50:1** | `--cursor: #143f7a` + `--cursor-halo` 双层描边 | 对棋盘两端 **6.31:1 / 4.84:1** |
-| 白棋描边 | `rgba(130,130,130,.75)` | 对棋盘暗端 **2.15:1** | `--stone-white-edge: #6b4f27` | 对棋盘两端 **4.60:1 / 3.53:1** |
-| 最后落子标记 | `#ff4d4f` | 对白棋子 **3.00:1**（临界） | `--last-marker: #d9363e` | 对白棋子 **4.24:1**、对黑棋子 **3.99:1** |
+| 键盘光标框 | `rgba(79,140,255,.95)` | 对棋盘亮/暗端仅 **1.96:1 / 1.50:1** | `--cursor: #143f7a` + `--cursor-halo` 双层描边 | 对棋盘亮/暗端 **6.31:1 / 4.84:1** |
+| 白棋描边 | `rgba(130,130,130,.75)` | 对棋盘暗端 **2.15:1** | `--stone-white-edge: #6b4f27` | 对棋盘亮/暗端 **4.60:1 / 3.53:1** |
+| 最后落子标记 | `#ff4d4f` | 对白棋子 **3.00:1**（临界） | `--last-marker` 圆点 + `--marker-halo` 外圈 | 标记/光环 **4.62:1**；光环/黑棋最亮端 **4.17:1** |
+| 水墨宣纸按钮焦点内环 | `#ffffff`（设计初值） | 对宣纸面板仅 **1.02:1**（不可见） | `[data-theme="ink"] { --focus-ring-inner: #2a2620 }` | 对宣纸面板 **14.78:1** |
 
-说明：光标框是键盘操作时的焦点/定位指示，属于 WCAG 2.1 SC 1.4.11 非文本对比度范畴；棋子与落子标记是游戏核心视觉信息，一并按 ≥3:1 约束。修正只改颜色令牌，不改变形状、尺寸与交互。
+说明：光标框是键盘操作时的焦点/定位指示，属于 WCAG 2.1 SC 1.4.11 非文本对比度范畴；棋子与落子标记是游戏核心视觉信息，一并按 ≥3:1 约束。修正只改颜色令牌与标记绘制层数，不改变形状、尺寸与交互。实现期复核发现设计初值的「最后落子标记对比度」与「水墨宣纸白色焦点内环」不达标，已分别改为双层标记（光环 + 圆点）与浅底主题深色内环，并按实测值更新本表与附录 A。
 
 ### 7.8 动效与降级
 
@@ -426,12 +431,12 @@ apply(id, { persist = true }):
 | `docs/theme-switching-design.md` | 新增 | 本文档（本次交付） |
 | `index.html` | 修改 | `<head>` 内联防闪烁脚本；头部新增 `.app-header` 两栏结构与 `.theme-switcher`；在 `ai.js` 与 `ui.js` 之间引入 `js/theme.js` |
 | `styles.css` | 修改 | `:root` 补全全部令牌（含 Canvas 用色），新增 `[data-theme="midnight"]`、`[data-theme="ink"]` 令牌块；组件样式改用 `var()`；`body` 渐变、`.board-wrap`、`.turn-dot`、`.btn:focus-visible` 令牌化；新增切换控件样式与窄屏规则；`prefers-reduced-motion` 块 |
-| `js/theme.js` | 新增 | 主题注册表、`resolveInitialTheme`、`init/apply/current/palette/onChange`、`localStorage` 读写与事件派发（目标 ≤180 行） |
-| `js/ui.js` | 修改 | 引入 `app.palette`，逐函数替换颜色字面量为调色板取值；新增光标双层描边；订阅 `gomoku:themechange` 触发重绘（其余逻辑不动） |
-| `tests/theme.test.js` | 新增 | 主题注册表/初始主题纯函数/令牌完整性/白名单一致性/三套主题对比度用例 |
-| `tests/a11y.test.js` | 修改 | 复用共享对比度助手，改为按主题作用域解析令牌；既有 D-01 等用例保持语义不变 |
+| `js/theme.js` | 新增 | 主题注册表、`resolveInitialTheme`、`init/apply/current/palette/onChange`、`localStorage` 读写与事件派发（约 270 行） |
+| `js/ui.js` | 修改 | 引入 `app.palette`，逐函数替换颜色字面量为调色板取值；光标与最后落子标记改为双层绘制；新增 `refreshPalette()` 并通过 `onChange` 触发重绘（其余逻辑不动） |
+| `tests/theme.test.js` | 新增 | 主题注册表/初始主题纯函数/令牌完整性/白名单一致性/CSS 令牌覆盖/首屏脚本顺序/三套主题对比度用例（22 例） |
+| `tests/a11y.test.js` | 修改 | 复用共享对比度助手，改为按主题作用域解析令牌；既有 D-01 等用例保持语义不变（每例 ×3 套主题） |
 | `tests/helpers/contrast.js` | 新增 | 从 `a11y.test.js` 抽出的 CSS 解析 + WCAG 对比度助手（`node:test` 零依赖，`require` 共享） |
-| `README.md` | 修改 | 目录结构补充新文档；"设计文档"引用 |
+| `README.md` | 修改 | 功能列表、目录结构与测试命令补充主题切换 |
 
 **明确不改**：`js/core.js`、`js/ai.js`（规则与 AI 与主题无关）；既有测试用例的断言语义。
 
@@ -444,7 +449,7 @@ apply(id, { persist = true }):
 | D-TH-01 | CSS 变量 + `data-theme` + JS 读令牌 | 多套样式表 / CSS-in-JS / filter 换色 | 见 §6.1，唯一同时满足零构建、无闪烁、可测试、单一颜色源的方案 |
 | D-TH-02 | `:root` 直接作为经典木纹主题（默认/回退） | 经典主题也放独立 `[data-theme]` 块 | 保证无 JS、存储失效、旧浏览器时仍有完整外观；沿用既有 `a11y.test.js` 的 `:root` 解析 |
 | D-TH-03 | Canvas 颜色由 `getComputedStyle` 读取并缓存 | JS 内置一份调色板 | 避免 CSS 与 JS 双源漂移；主题数据只存于 `styles.css` |
-| D-TH-04 | 首次访问跟随 `prefers-color-scheme`，用户显式选择后以其保存值为准 | 始终默认经典木纹 | 符合用户系统偏好，减少首次刺眼；显式选择优先，行为可预期 |
+| D-TH-04 | 首次访问（无保存值）**始终默认经典木纹**，用户显式选择后以其保存值为准 | 跟随系统 `prefers-color-scheme` | 用户已确认（Q2）：默认场景固定为经典木纹，行为可预期；跟随系统留作 P1 扩展（§13） |
 | D-TH-05 | 主题仅存 `localStorage`（键 `gomoku.theme.v1`） | Cookie / 服务端同步 | 无需网络与后端，符合离线约束 |
 | D-TH-06 | 场景感用渐变/线条/配色表达，不引入位图资源 | 背景插画 | 保持零资源、`file://` 稳定、首屏无额外加载；若确需插画见待确认 Q1 |
 | D-TH-07 | 主题令牌化同时修正光标/白棋描边/落子标记对比度 | 另行开缺陷任务 | 三者都落在主题令牌边界内，顺手修正成本低，且主题测试可一并守住 |
@@ -463,10 +468,10 @@ apply(id, { persist = true }):
 | TH-04 | 首屏无主题闪烁 | 手工：慢速网络/强制重绘下观察首帧；代码审查内联脚本位置 |
 | TH-05 | 每套主题声明全部必需令牌 | 自动：`tests/theme.test.js` 令牌完整性用例 |
 | TH-06 | 每套主题文字 ≥4.5:1、非文本/焦点 ≥3:1 | 自动：主题对比度用例（复用 WCAG 助手） |
-| TH-07 | 键盘可切换，`aria-pressed` 正确 | 手工 Tab/Enter/Space；自动：DOM 断言（可选） |
+| TH-07 | 键盘可切换，`aria-pressed` 正确 | 手工 Tab/Enter/Space；自动：`tests/theme.test.js` 校验切换控件标记与初始选中项 |
 | TH-08 | 存储不可用时正常降级 | 手工：隐私模式/禁用存储；代码审查 try/catch |
 | TH-09 | 切换不影响对局状态 | 手工：落子/AI 思考中/终局时切换，核对面板与棋盘历史不变 |
-| TH-10 | 既有功能与测试零回归 | 自动：`node --test tests/*.test.js` 全部通过（现有 35 例 + 新增） |
+| TH-10 | 既有功能与测试零回归 | 自动：`node --test tests/core.test.js tests/ai.test.js tests/a11y.test.js tests/theme.test.js` 全部通过（70 例；规则/AI 既有 35 例不回归） |
 | TH-11 | 无新增依赖/请求/构建，`file://` 可运行 | 手工：断网双击 `index.html`，控制台无报错 |
 | TH-12 | `prefers-reduced-motion` 下无过渡动画 | 手工：系统开启减少动态效果后切换 |
 | TH-13 | 320px 宽不溢出、切换控件可达 | 手工：开发者工具窄屏 |
@@ -476,25 +481,27 @@ apply(id, { persist = true }):
 
 | 编号 | 用例 | 预期 |
 | --- | --- | --- |
-| T-TH-01 | `resolveInitialTheme('midnight', false)` | 返回 `'midnight'`（保存值优先于系统偏好） |
-| T-TH-02 | `resolveInitialTheme(null, true)` / `(null, false)` | `'midnight'` / `'classic'` |
-| T-TH-03 | `resolveInitialTheme('unknown', true)` | `'midnight'`（非法值被忽略，按系统偏好） |
-| T-TH-04 | `THEMES` 结构 | 3 项、id 唯一且与 `index.html` 内联白名单一致、均含 label/description/colorScheme |
-| T-TH-05 | 令牌完整性 | 每个主题块（含 `:root`）声明 §7.2 全部必需令牌；无多余/未知令牌警告 |
-| T-TH-06 | 文本对比度 | 三套主题的 `--text/--panel-bg`、`--text/--page-bg`、`--text-muted/--panel-bg` 等 ≥4.5:1 |
-| T-TH-07 | 按钮对比度 | 白字 / `--accent-strong`、白字 / `--accent-strong-hover` ≥4.5:1；`--danger`、`--win` 对页面底 ≥4.5:1 |
-| T-TH-08 | 焦点与棋盘非文本对比度 | `--accent` 对页面/面板 ≥3:1；`--cursor` 对棋盘两档 ≥3:1；`--board-grid`、`--board-star`、`--stone-*-edge`、`--last-marker`（对黑白棋子）≥3:1 |
-| T-TH-09 | 颜色源唯一性 | `js/ui.js` 中不出现颜色字面量（正则扫描 `#rgb/#rrggbb/rgba(`，注释与兜底例外需显式白名单） |
+| T-TH-01 | `resolveInitialTheme('midnight')` | 返回 `'midnight'`（保存值优先） |
+| T-TH-02 | `resolveInitialTheme(null)` / `(undefined)` / `('')` | 均返回 `'classic'`（Q2：首次访问默认经典木纹） |
+| T-TH-03 | `resolveInitialTheme('unknown')` / 非字符串 | `'classic'`（非法值被忽略） |
+| T-TH-04 | 注册表与首屏脚本一致性 | 3 项、id 唯一、含 label/description/colorScheme；内联白名单一致；存储键一致；无 `prefers-color-scheme`；切换控件覆盖全部主题且初始仅一项 `aria-pressed="true"` |
+| T-TH-05 | 令牌完整性 | 每个主题块（含 `:root`）声明 §7.2 全部必需令牌；主题块覆盖页面/棋盘关键令牌而非单一强调色 |
+| T-TH-06 | 文本与按钮文字对比度 | 三套主题的正文/次要文字/按钮白字/错误/胜利文字均 ≥4.5:1 |
+| T-TH-07 | 主题差异覆盖 | 暗夜星空、水墨宣纸与经典木纹相比，页面、面板、棋盘、棋子、光标等 ≥8 个令牌不同 |
+| T-TH-08 | 焦点与棋盘非文本对比度 | `--accent` 对页面/面板、`--cursor` 对棋盘两档、`--board-grid`、`--board-star`、`--stone-*-edge`、落子标记/光环、光环/黑棋均 ≥3:1 |
+| T-TH-09 | 颜色源唯一性 | `js/ui.js`、`js/theme.js` 中不出现颜色字面量（`#rgb/#rrggbb/rgb()/rgba()/hsl()`） |
 | T-TH-10 | 兜底可用 | `:root` 覆盖全部必需令牌（无 JS/无主题属性时页面完整） |
+| T-TH-11 | Canvas 调色板桥接 | `GomokuTheme.CANVAS_TOKENS` 与设计清单一致，`readPalette()` 读取的令牌与清单一一对应 |
+| T-TH-12 | 首屏与脚本顺序 | 设置 `data-theme` 的内联脚本位于 `<link rel="stylesheet">` 之前；`theme.js` 先于 `ui.js` 加载 |
 
-> 说明：对比度计算与 CSS 解析复用 `tests/helpers/contrast.js`；`tests/a11y.test.js` 改为按主题作用域解析同一套断言，既有 D-01 等的检查语义不变（默认主题 = `:root`，因此现有断言若保持选择器解析方式可继续通过，新增用例只扩展主题维度）。
+> 说明：对比度计算与 CSS 解析复用 `tests/helpers/contrast.js`；`tests/a11y.test.js` 同样改为按主题作用域解析令牌，既有 D-01 等用例保持语义不变、每例在三套主题下各跑一遍。
 
 ### 9.3 手工验收清单（浏览器）
 
 1. 双击 `index.html`（`file://`）：默认主题正确、控制台无报错、无闪烁。
 2. 依次切换三套主题：页面所有区域与棋盘、棋子、标记、光标一致变化，无旧颜色残留。
 3. 选暗夜星空后刷新：首屏直接是暗夜星空，无经典木纹闪现。
-4. 清除 `localStorage` 后刷新：按系统深/浅色偏好得到对应默认主题。
+4. 清除 `localStorage` 后刷新：回到默认经典木纹（Q2 已确认，不跟随系统深浅色）。
 5. 落子若干（含人机模式 AI 思考中）后切换主题：手数、当前执子、结果提示、模式不变；AI 正常落子。
 6. 终局后切换主题：胜利高亮条与结果文字颜色成套变化。
 7. 键盘：Tab 到切换控件，Enter/Space 切换，焦点环清晰；`aria-pressed` 随选中变化。
@@ -536,17 +543,17 @@ apply(id, { persist = true }):
 | M3 | 切换控件 + 首屏脚本 + 持久化 + Canvas 适配 | `index.html`、`styles.css` 控件样式、`js/ui.js` 调色板化，手工清单 1–8 通过 | 1 天 |
 | M4 | 三套主题调色打磨 + 动效/降级 + 全量验收 | 三套主题视觉定稿、手工清单 1–11 通过、既有测试全绿 | 1 天 |
 
-合计约 3.5 个工作日；M1 评审通过后进入 M2，M2/M3 可顺序推进。
+合计约 3.5 个工作日；M1 评审通过后进入 M2，M2/M3 可顺序推进。**v1.1 已按 M1–M4 完成实现与自动化验收（见 §14）。**
 
 ---
 
-## 12. 待确认问题（需决策）
+## 12. 待确认问题（已全部确认，结论回填）
 
-| 编号 | 问题 | 影响 | 默认建议（若未回复） |
+| 编号 | 问题 | 影响 | 用户结论（2026-10-22） |
 | --- | --- | --- | --- |
-| Q1 | "不同风格的场景"是否确认为**配色/材质型主题**（经典木纹、暗夜星空、水墨宣纸）？若期望具象插画场景（森林/海滩/星空图），需引入本地图片资源，会改变"零资源、零网络"约束 | 决定 M2/M3 的工作量与资源策略 | 按配色/材质型主题执行（A-01） |
-| Q2 | 首次访问（无保存值）是否跟随系统深/浅色偏好？还是始终默认经典木纹？ | 影响 `resolveInitialTheme` 与内联脚本 | 跟随系统偏好（D-TH-04） |
-| Q3 | 主题是否需要影响**棋子材质**（黑白棋子渐变/描边）？还是只换页面 UI 与棋盘底色？ | 影响 Canvas 令牌范围与实现量 | 影响棋子（本设计已按完整场景主题设计） |
+| Q1 | "不同风格的场景"是否确认为**配色/材质型主题**（经典木纹、暗夜星空、水墨宣纸）？若期望具象插画场景（森林/海滩/星空图），需引入本地图片资源，会改变"零资源、零网络"约束 | 决定 M2/M3 的工作量与资源策略 | **已确认**：是配色主题，**不引入图片资源**；按配色/材质型主题实现（A-01） |
+| Q2 | 首次访问（无保存值）是否跟随系统深/浅色偏好？还是始终默认经典木纹？ | 影响 `resolveInitialTheme` 与内联脚本 | **已确认**：默认 **经典木纹**；不跟随系统偏好（D-TH-04、FR-T05） |
+| Q3 | 主题是否需要影响**棋子材质**（黑白棋子渐变/描边）？还是只换页面 UI 与棋盘底色？ | 影响 Canvas 令牌范围与实现量 | **已确认**：**会影响**棋子材质；按完整场景主题实现（含棋盘、棋子、标记、光标） |
 
 ---
 
@@ -561,9 +568,52 @@ apply(id, { persist = true }):
 
 ---
 
-## 附录 A：三套主题基线对比度核算结果
+## 14. 实现与验收记录（v1.1）
 
-计算方式：WCAG 2.1 相对亮度公式 `(L1+0.05)/(L2+0.05)`，由设计期的临时 Node 脚本对 §7.2 基线色值逐项计算（脚本已删除，实现阶段由 `tests/theme.test.js` 用同一公式对实际 CSS 值复核）。棋盘相关项取棋盘渐变两档中较低值，保证两端都满足。
+### 14.1 实现文件
+
+| 文件 | 状态 | 说明 |
+| --- | --- | --- |
+| `index.html` | 修改 | `<head>` 防闪烁内联脚本；`.app-header` 两栏结构与三按钮 `.theme-switcher`；脚本顺序 `core → ai → theme → ui` |
+| `styles.css` | 修改 | `:root` 经典木纹全量令牌 + `[data-theme="midnight"]` / `[data-theme="ink"]` 覆盖块；组件颜色全部改为 `var()`；切换控件样式、窄屏规则、颜色过渡与 `prefers-reduced-motion` 降级 |
+| `js/theme.js` | 新增 | 主题注册表、`resolveInitialTheme`、`init/apply/current/palette/onChange`、`localStorage` 持久化与降级、`gomoku:themechange` 事件 |
+| `js/ui.js` | 修改 | `app.palette` 桥接；网格/星位/棋子/胜利条/落子标记/光标全部改为调色板取值；光标与落子标记双层绘制；主题事件触发调色板失效与重绘 |
+| `tests/helpers/contrast.js` | 新增 | CSS 声明解析、`var()` 展开、WCAG 2.1 对比度计算（零依赖） |
+| `tests/theme.test.js` | 新增 | T-TH-01 ~ T-TH-12 |
+| `tests/a11y.test.js` | 修改 | 复用共享助手，按主题作用域校验 |
+| `README.md` | 修改 | 功能列表、目录结构、测试命令 |
+| `js/core.js`、`js/ai.js` | 未改 | 规则与 AI 与主题无关，既有测试原样通过 |
+
+### 14.2 自动化验证结果
+
+- 全量测试：`node --test tests/core.test.js tests/ai.test.js tests/a11y.test.js tests/theme.test.js` → **70 例全部通过，0 失败**。
+  - `core.test.js` 18 例、`ai.test.js` 11 例：未改动的既有规则/AI 用例。
+  - `a11y.test.js` 21 例：原有 D-01 等 7 组断言语义不变，各在三套主题下执行。
+  - `theme.test.js` 20 例：T-TH-01 ~ T-TH-12，含令牌完整性、三套主题对比度、颜色源唯一性、白名单/首屏脚本/加载顺序。
+- 浏览器端到端实测（Chrome Headless + DevTools Protocol，直接打开 `file://` 下的真实 `index.html`）：
+  - 首访：`data-theme=classic`、`aria-pressed` 正确、`--page-bg=#202634`、`--board-light=#ecc47e`。
+  - 点击棋盘落子后切换水墨宣纸：`data-theme=ink`、`--page-bg=#f4efe4`、`--board-light=#e3d5b3`；Canvas 落子标记像素由 `#d9363e` 变为 `#c0392b`（说明调色板已重读、棋盘已重绘）；`aria-pressed` 同步；`localStorage['gomoku.theme.v1']=ink`。
+  - 切换前后对局手数（1 手）与状态（`playing`）不变。
+  - 刷新后：`GomokuTheme.current()=ink`、`data-theme=ink`，与首屏内联脚本一致（主题记忆生效）。
+  - 全程无页面异常（`Runtime.exceptionThrown` 为空）。
+
+### 14.3 仍需人工确认的验收项
+
+- §9.3 手工清单中的键盘 Tab/Enter/Space、320px 窄屏、`prefers-reduced-motion`、隐私模式禁用存储、Windows 强制颜色模式需在真实浏览器交互确认；其余项已由自动化测试或上述端到端脚本覆盖。
+- Q1–Q3 已全部确认，无剩余待决策问题。
+
+### 14.4 与 v1.0 设计基线的差异（均有说明）
+
+1. **默认主题**：按 Q2 去掉 `prefers-color-scheme` 分支，首次访问固定经典木纹。
+2. **新增令牌**：`--text-on-accent`（主按钮文字色）、`--marker-halo`（落子标记光环）；三套主题各声明 32 个主题令牌。
+3. **可辨识度修正**：最后落子标记改为「光环 + 圆点」双层绘制；水墨宣纸 `--focus-ring-inner` 由 `#ffffff` 改为 `#2a2620`，否则白色焦点环在宣纸面板上不可见（见 §7.7）。
+4. **切换控件色块**：`.theme-swatch` 预览色按主题 id 写在 `styles.css`（其他主题颜色无法用当前主题的令牌表达），`js/` 中仍无颜色字面量。
+
+---
+
+## 附录 A：三套主题对比度实测结果
+
+计算方式：WCAG 2.1 相对亮度公式 `(L1+0.05)/(L2+0.05)`。下表为 v1.1 实现完成后，由 `tests/theme.test.js` 对 `styles.css` 实际声明值逐项复核的结果（与测试使用同一公式）；棋盘相关项取棋盘渐变两档中较低值，保证两端都满足。
 
 | 检查项（前景 / 背景） | 要求 | 经典木纹 | 暗夜星空 | 水墨宣纸 |
 | --- | --- | --- | --- | --- |
@@ -580,10 +630,10 @@ apply(id, { persist = true }):
 | 星位 / 棋盘（两档取低） | ≥3 | 5.40:1 | 6.44:1 | 8.68:1 |
 | 白棋描边 / 棋盘（两档取低） | ≥3 | 3.53:1 | 8.96:1 | 5.45:1 |
 | 黑棋描边 / 棋盘（两档取低） | ≥3 | 9.79:1 | 6.16:1 | 11.86:1 |
-| 最后落子标记 / 白棋子 | ≥3 | 4.24:1 | 4.24:1 | 4.99:1 |
-| 最后落子标记 / 黑棋子 | ≥3 | 3.99:1 | 3.99:1 | 3.39:1 |
+| 最后落子标记 / 标记光环 | ≥3 | 4.62:1 | 4.62:1 | 5.35:1 |
+| 标记光环 / 黑棋最亮端 | ≥3 | 4.17:1 | 3.08:1 | 5.24:1 |
 
-结论：三套主题基线全部满足设计约束（文字 ≥4.5:1、非文本与焦点 ≥3:1），可作为实现阶段的初始色值；实现后以自动化测试为准。
+结论：三套主题实测全部满足设计约束（文字 ≥4.5:1、非文本与焦点 ≥3:1），由 `tests/theme.test.js` 持续守住；后续调整任何色值必须重新通过该测试。
 
 ---
 
